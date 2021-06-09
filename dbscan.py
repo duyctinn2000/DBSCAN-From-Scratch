@@ -19,39 +19,36 @@ class KDNode:
 class KDTree:
     
     def __init__(self, no_dimentions):
-        self.no_dimentions = no_dimentions        
+        self.no_dimentions = no_dimentions
 
     def insert(self, root, key, val, coord=0):
         if not root:
             return KDNode(key, val)
-        elif root.key[coord] < key[coord]:
+        elif root.val[coord] < val[coord]:
             root.right = self.insert(root.right, key, val, (coord+1) % self.no_dimentions)
         else:
             root.left = self.insert(root.left, key, val, (coord+1) % self.no_dimentions)
         return root
 
-    def range_search(self, key_down, key_up, node: KDNode, coord, no_dimentions, list_node, point, eps):
+    def range_search(self, val_down, val_up, node: KDNode, coord, no_dimentions, list_node, point, eps):
         if node is None:
             return
-        if key_down[coord] <= node.key[coord]:
-            self.range_search(key_down, key_up, node.left, (coord+1) % no_dimentions, no_dimentions, list_node, point, eps)
+        if val_down[coord] <= node.val[coord]:
+            self.range_search(val_down, val_up, node.left, (coord+1) % no_dimentions, no_dimentions, list_node, point, eps)
         coord_i = 0
         distance = 0.0
-        while coord_i < no_dimentions and key_down[coord_i] <= node.key[coord_i] and key_up[coord_i] >= node.key[coord_i]:
-            distance += (point[coord_i]-node.key[coord_i])**2
+        while coord_i < no_dimentions and val_down[coord_i] <= node.val[coord_i] and val_up[coord_i] >= node.val[coord_i]:
+            distance += (point[coord_i]-node.val[coord_i])**2
             coord_i = coord_i + 1
         if coord_i == no_dimentions and math.sqrt(distance) <= eps:
-            list_node.append(node.val)
-        if key_up[coord] >= node.key[coord]:
-            self.range_search(key_down, key_up, node.right, (coord+1) % no_dimentions, no_dimentions, list_node, point, eps)
+            list_node.append(node.key)
+        if val_up[coord] >= node.val[coord]:
+            self.range_search(val_down, val_up, node.right, (coord+1) % no_dimentions, no_dimentions, list_node, point, eps)
         
-    def range_search_result(self, root, key_down, key_up, point, eps):
+    def range_search_result(self, root, val_down, val_up, point, eps):
         list_node = []
-        self.range_search(key_down, key_up, root, 0, self.no_dimentions, list_node, point, eps)
+        self.range_search(val_down, val_up, root, 0, self.no_dimentions, list_node, point, eps)
         return list_node
-
-    
-
 
 
 class MyDBSCAN():
@@ -65,12 +62,12 @@ class MyDBSCAN():
         self.border = 'b'
 
     def neighbour_points(self, root, kdtree, point):
-        key_down = []
-        key_up = []
+        val_down = []
+        val_up = []
         for i in range(self.no_dimetions):
-            key_down.append(point[i] - self.eps)
-            key_up.append(point[i] + self.eps)
-        points = kdtree.range_search_result(root, key_down, key_up, point, self.eps)
+            val_down.append(point[i] - self.eps)
+            val_up.append(point[i] + self.eps)
+        points = kdtree.range_search_result(root, val_down, val_up, point, self.eps)
         return points
 
 
@@ -80,15 +77,17 @@ class MyDBSCAN():
         data = []
         root = None
         size_data = 0
+        i = 0
         # Reading from the data file
         start = timeit.default_timer()
         with open(dataset) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
                 row_float = [float(item) for item in row[1:]]
-                root = kdtree.insert(root, row_float, size_data)
-                size_data += 1
+                root = kdtree.insert(root, i, row_float)
+                i += 1
                 data.append(row_float)
+            size_data = i
             print(f'Processed {size_data} lines.')
         
         #clustering = DBSCAN(eps=self.eps, min_samples=self.min_points).fit(np.array(data))
@@ -187,7 +186,7 @@ class MyDBSCAN():
 def main():
 
     no_dimentions = 2
-    eps = 0.03*100000
+    eps = 0.035*100000
     min_points = 4
     min_elements = 40 #minimum elements in cluter to be recognized as a cluster
     dataset = '/Users/duynh/BK/kpdl/btl/hawks/docs/source/examples/simple_example/datasets/birch1.txt'
