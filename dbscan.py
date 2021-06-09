@@ -70,6 +70,16 @@ class MyDBSCAN():
         points = kdtree.range_search_result(root, val_down, val_up, point, self.eps)
         return points
 
+    def plot(self,n,data,point_labels):
+        plt.figure(num=n,figsize=(10,10))
+        pca = PCA(2)
+        df = pca.fit_transform(np.array(data))
+        df.shape
+        label = np.array(point_labels)
+        u_labels = np.unique(label)
+        for i in u_labels:
+            plt.scatter(df[label == i , 0] , df[label == i , 1])
+        plt.show()
 
     def fit(self, dataset):
         
@@ -132,7 +142,7 @@ class MyDBSCAN():
         cluster = 0
 
         # Use a stack to performing Breadth First search to find clusters of datasets
-        
+
         for i in range(size_data):
             stack = []
             if (point_label[i] == self.core):
@@ -161,49 +171,50 @@ class MyDBSCAN():
                 else:
                     for j in cluster_points:
                         point_label[j] = -1
+
                         
         t3 = timeit.default_timer()
         print("Thời gian để gom cụm các điểm: ",t3-t2)
         
-        
-        
-        hawks.plotting.scatter_prediction(np.array(data), point_label)
+        #hawks.plotting.scatter_prediction(np.array(data), point_label)
         #ari = adjusted_rand_score(labels, point_label)
         #print(f"ARI: {ari}")
-        while -1 in point_label:
-            i = point_label.index(-1)
-            data.remove(data[i])
-            point_label.remove(point_label[i])
+        _data = []
+        _label = []
+        for i in range(len(point_label)):
+            if point_label[i] != -1:
+                _label += [point_label[i]]
+                _data += [data[i]]
+        
+        # while -1 in point_label:
+        #     i = point_label.index(-1)
+        #     data.remove(data[i])
+        #     point_label.remove(point_label[i])
         #generator.plot_best_indivs(show=True)
-        hawks.plotting.scatter_prediction(np.array(data), point_label)
+        #hawks.plotting.scatter_prediction(np.array(data), point_label)
         t4 = timeit.default_timer()
         print("Thời gian để loại bỏ các điểm outlier: ",t4-t3)
         print("Tổng thời gian thực thi: ",t4-start)
         print("Tổng số core point và border point là: ", len(point_label))
-        print("Tổng số outlier point là: ", 100000-len(point_label))
+        print("Tổng số outlier point là: ", 100000-len(_label))
         print("Tổng số cluster là: ",cluster)
+        self.plot(1,data,point_label)
+        self.plot(2,_data,_label)
         return data, point_label, cluster
+        
 def main():
 
     no_dimentions = 2
+    #eps = 0.036
     eps = 0.035*100000
     min_points = 4
-    min_elements = 40 #minimum elements in cluter to be recognized as a cluster
+    min_elements = 30 #minimum elements in cluter to be recognized as a cluster
     dataset = '/Users/duynh/BK/kpdl/btl/hawks/docs/source/examples/simple_example/datasets/birch1.txt'
     my_DBSCAN = MyDBSCAN(no_dimentions, eps, min_points, min_elements)
     
     data, point_labels, clusters = my_DBSCAN.fit(dataset)
     
     #plotting the results:
-    plt.figure(num=10,figsize=(10,10))
-    pca = PCA(2)
-    df = pca.fit_transform(np.array(data))
-    df.shape
-    label = np.array(point_labels)
-    u_labels = np.unique(label)
-    for i in u_labels:
-        plt.scatter(df[label == i , 0] , df[label == i , 1])
-    plt.show()
     
 
     #print(point_labels, clusters)
